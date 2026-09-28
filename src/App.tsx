@@ -17,6 +17,11 @@ function App() {
   const [textoEditar, setTextoEditar] = useState('')
   const [mostrarPapelera, setMostrarPapelera] = useState(false)
   const [filtro, setFiltro] = useState<'todas' | 'activas' | 'completadas'>('todas')
+  const [tema, setTema] = useState<'dark' | 'light'>('dark')
+
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', tema)
+  }, [tema])
 
   const cargarTareas = () => {
     fetch(`${API}/tareas`).then((r) => r.json()).then(setTareas)
@@ -81,7 +86,12 @@ function App() {
 
   return (
     <div className="container">
-      <h1>To-Do_Hidalgo_1</h1>
+      <div className="header">
+        <h1>To-Do_Hidalgo_1</h1>
+        <button className="theme-toggle" onClick={() => setTema(tema === 'dark' ? 'light' : 'dark')}>
+          {tema === 'dark' ? '☀️' : '🌙'}
+        </button>
+      </div>
 
       <div className="input-row">
         <input
