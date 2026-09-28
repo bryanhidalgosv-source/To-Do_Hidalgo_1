@@ -1,0 +1,14 @@
+{
+  "name": "todo-server",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "node index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^18.0.4",
+    "express": "^4.21.0",
+    "pg": "^8.13.0"
+  }
+}
