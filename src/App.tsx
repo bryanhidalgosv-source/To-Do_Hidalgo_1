@@ -18,10 +18,19 @@ function App() {
   const [mostrarPapelera, setMostrarPapelera] = useState(false)
   const [filtro, setFiltro] = useState<'todas' | 'activas' | 'completadas'>('todas')
   const [tema, setTema] = useState<'dark' | 'light'>('dark')
+  const [toast, setToast] = useState<string | null>(null)
+  const [confirmEliminarTodo, setConfirmEliminarTodo] = useState(0)
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', tema)
   }, [tema])
+
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
 
   const cargarTareas = () => {
     fetch(`${API}/tareas`).then((r) => r.json()).then(setTareas)
@@ -42,7 +51,11 @@ function App() {
   }
 
   const toggleTarea = async (id: number) => {
-    await fetch(`${API}/tareas/${id}/completar`, { method: 'PUT' })
+    const res = await fetch(`${API}/tareas/${id}/completar`, { method: 'PUT' })
+    const actualizada = await res.json()
+    if (actualizada.completada) {
+      setToast(`✓ "${actualizada.texto}" completada!`)
+    }
     cargarTareas()
   }
 
@@ -78,6 +91,21 @@ function App() {
     }
   }
 
+  const eliminarTodo = async () => {
+    if (confirmEliminarTodo === 0) {
+      setConfirmEliminarTodo(1)
+      setToast('Esta acción es irreversible. Se eliminarán definitivamente de la base de datos.')
+      setTimeout(() => setConfirmEliminarTodo(0), 4000)
+      return
+    }
+    for (const tarea of borradas) {
+      await fetch(`${API}/tareas/${tarea.id}/eliminar`, { method: 'DELETE' })
+    }
+    setConfirmEliminarTodo(0)
+    setToast('Papelera vaciada. Todas las tareas fueron eliminadas definitivamente.')
+    cargarTareas()
+  }
+
   const tareasFiltradas = tareas.filter((t) => {
     if (filtro === 'activas') return !t.completada
     if (filtro === 'completadas') return t.completada
@@ -86,6 +114,13 @@ function App() {
 
   return (
     <div className="container">
+      {toast && (
+        <div className="toast">
+          <span className="toast-icon">✓</span>
+          <span className="toast-text">{toast}</span>
+        </div>
+      )}
+
       <div className="header">
         <h1>To-Do_Hidalgo_1</h1>
         <button className="theme-toggle" onClick={() => setTema(tema === 'dark' ? 'light' : 'dark')}>
@@ -161,17 +196,31 @@ function App() {
           ))}
         </ul>
       ) : (
-        <ul className="lista">
-          {borradas.map((tarea) => (
-            <li key={tarea.id} className="borrada">
-              <span>{tarea.texto}</span>
-              <div className="acciones">
-                <button className="restaurar" onClick={() => restaurar(tarea.id)}>Restaurar</button>
-                <button className="eliminar-definitivo" onClick={() => eliminarDefinitivo(tarea.id)}>Eliminar</button>
-              </div>
-            </li>
-          ))}
-        </ul>
+        <>
+          {borradas.length > 0 && (
+            <div className="eliminar-todo-container">
+              <button className={`eliminar-todo ${confirmEliminarTodo === 1 ? 'confirm-1' : ''} ${confirmEliminarTodo === 2 ? 'confirm-2' : ''}`} onClick={eliminarTodo}>
+                <svg className="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M3 6h18"/>
+                  <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/>
+                  <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>
+                </svg>
+                <span>{confirmEliminarTodo === 0 ? 'Eliminar todo' : 'Confirmar eliminación definitiva'}</span>
+              </button>
+            </div>
+          )}
+          <ul className="lista">
+            {borradas.map((tarea) => (
+              <li key={tarea.id} className="borrada">
+                <span>{tarea.texto}</span>
+                <div className="acciones">
+                  <button className="restaurar" onClick={() => restaurar(tarea.id)}>Restaurar</button>
+                  <button className="eliminar-definitivo" onClick={() => eliminarDefinitivo(tarea.id)}>Eliminar</button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </>
       )}
 
       {!mostrarPapelera && (
